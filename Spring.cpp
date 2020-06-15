@@ -1,5 +1,6 @@
 #include "Spring.h"
 #include <algorithm>
+#include <unordered_map>
 #include <iostream>
 
 using namespace std;
@@ -30,6 +31,7 @@ void Spring::initSprings()
 {
 	vector<unsigned int>& indices = mesh_ptr_->indices;
 	vector<Vertex>& vertices = mesh_ptr_->vertices;
+	// ½á¹¹µ¯»É
 	for (int i = 0; i < indices.size(); i += 3) {
 		float dis1 = glm::distance(vertices[indices[i]].Position, vertices[indices[i + 1]].Position);
 		float dis2 = glm::distance(vertices[indices[i]].Position, vertices[indices[i + 2]].Position);
@@ -38,6 +40,22 @@ void Spring::initSprings()
 		springs_p_.emplace_back(SprP{ indices[i], indices[i + 2], dis2 });
 		springs_p_.emplace_back(SprP{ indices[i + 1], indices[i + 2], dis3 });
 	}
+	// ¼ôÇÐµ¯»É
+	unordered_map<unsigned int, unsigned int> dict;
+	for (int i = 0; i < indices.size(); i += 3) {
+		unsigned int i1 = indices[i], i2 = indices[i + 1], i3 = indices[i + 2];
+		unsigned int key1 = i1 < i2 ? i1 * 10000 + i2 : i2 * 10000 + i1;
+		unsigned int key2 = i1 < i3 ? i1 * 10000 + i3 : i3 * 10000 + i1;
+		unsigned int key3 = i2 < i3 ? i2 * 10000 + i3 : i3 * 10000 + i2;
+		if (dict.count(key1)) springs_p_.emplace_back(SprP{ i3, dict[key1], glm::distance(vertices[i3].Position, vertices[dict[key1]].Position) });
+		if (dict.count(key2)) springs_p_.emplace_back(SprP{ i2, dict[key2], glm::distance(vertices[i2].Position, vertices[dict[key2]].Position) });
+		if (dict.count(key3)) springs_p_.emplace_back(SprP{ i1, dict[key3], glm::distance(vertices[i1].Position, vertices[dict[key3]].Position) });
+		dict[key1] = i3;
+		dict[key2] = i2;
+		dict[key3] = i1;
+	}
+
+	// Ô¼Êøµ¯»É
 	for (int i = 0; i < vertices.size(); ++i) {
 		springs_c_.emplace_back(SprC{ (unsigned int)i, vertices[i].Position });
 	}
